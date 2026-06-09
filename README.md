@@ -1,3 +1,5 @@
+# CFI 2026-06-02
+
 # EnglishMatrix — Documentación técnica
 > Versión 9 | Aplicación de consola en C# para aprender inglés
 
