@@ -13,6 +13,7 @@ using System.Linq;
 class EnglishMatrix
 {
     // ── Modelos ──────────────────────────────────────────────
+    
 
     class Word
     {
