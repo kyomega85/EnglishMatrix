@@ -1,0 +1,14 @@
+C:\Users\Lap\EnglishMatrix\bin\Debug\net10.0\EnglishMatrix.exe
+C:\Users\Lap\EnglishMatrix\bin\Debug\net10.0\EnglishMatrix.deps.json
+C:\Users\Lap\EnglishMatrix\bin\Debug\net10.0\EnglishMatrix.runtimeconfig.json
+C:\Users\Lap\EnglishMatrix\bin\Debug\net10.0\EnglishMatrix.dll
+C:\Users\Lap\EnglishMatrix\bin\Debug\net10.0\EnglishMatrix.pdb
+C:\Users\Lap\EnglishMatrix\obj\Debug\net10.0\EnglishMatrix.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Lap\EnglishMatrix\obj\Debug\net10.0\EnglishMatrix.AssemblyInfoInputs.cache
+C:\Users\Lap\EnglishMatrix\obj\Debug\net10.0\EnglishMatrix.AssemblyInfo.cs
+C:\Users\Lap\EnglishMatrix\obj\Debug\net10.0\EnglishMatrix.csproj.CoreCompileInputs.cache
+C:\Users\Lap\EnglishMatrix\obj\Debug\net10.0\EnglishMatrix.dll
+C:\Users\Lap\EnglishMatrix\obj\Debug\net10.0\refint\EnglishMatrix.dll
+C:\Users\Lap\EnglishMatrix\obj\Debug\net10.0\EnglishMatrix.pdb
+C:\Users\Lap\EnglishMatrix\obj\Debug\net10.0\EnglishMatrix.genruntimeconfig.cache
+C:\Users\Lap\EnglishMatrix\obj\Debug\net10.0\ref\EnglishMatrix.dll
