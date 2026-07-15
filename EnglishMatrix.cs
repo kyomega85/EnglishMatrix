@@ -268,6 +268,10 @@ class EnglishMatrix
         { "rent",      new SpanishConj { YoPres="alquilo",       ElPres="alquila",        NosPres="alquilamos",     YoPast="alquilé",        ElPast="alquiló",        NosPast="alquilamos"      } },
         { "rest",      new SpanishConj { YoPres="descanso",      ElPres="descansa",       NosPres="descansamos",    YoPast="descansé",       ElPast="descansó",       NosPast="descansamos"     } },
         { "stay",      new SpanishConj { YoPres="quedo",         ElPres="queda",          NosPres="quedamos",       YoPast="quedé",          ElPast="quedó",          NosPast="quedamos"        } },
+        { "hang",      new SpanishConj { YoPres="cuelgo",        ElPres="cuelga",         NosPres="colgamos",       YoPast="colgué",         ElPast="colgó",          NosPast="colgamos"        } },
+        { "hit",       new SpanishConj { YoPres="golpeo",        ElPres="golpea",         NosPres="golpeamos",      YoPast="golpeé",         ElPast="golpeó",         NosPast="golpeamos"       } },
+        { "sit",       new SpanishConj { YoPres="me siento",     ElPres="se sienta",      NosPres="nos sentamos",   YoPast="me senté",       ElPast="se sentó",       NosPast="nos sentamos"    } },
+        { "tear",      new SpanishConj { YoPres="rasgo",         ElPres="rasga",          NosPres="rasgamos",       YoPast="rasgué",         ElPast="rasgó",          NosPast="rasgamos"        } },
     };
 
     // ── Lista completa de verbos (SIN DUPLICADOS) ──
@@ -305,6 +309,7 @@ class EnglishMatrix
         new VerbEntry { Infinitive="decide",    Past="decided",     Participle="decided",     Gerund="deciding",     SpanishInf="decidir",      IsRegular=true },
         new VerbEntry { Infinitive="defend",    Past="defended",    Participle="defended",    Gerund="defending",    SpanishInf="defender",     IsRegular=true },
         new VerbEntry { Infinitive="delete",    Past="deleted",     Participle="deleted",     Gerund="deleting",     SpanishInf="eliminar",     IsRegular=true },
+        new VerbEntry { Infinitive="destroy",   Past="destroyed",   Participle="destroyed",   Gerund="destroying",   SpanishInf="destruir",     IsRegular=true },
         new VerbEntry { Infinitive="download",  Past="downloaded",  Participle="downloaded",  Gerund="downloading",  SpanishInf="descargar",    IsRegular=true },
         new VerbEntry { Infinitive="dress",     Past="dressed",     Participle="dressed",     Gerund="dressing",     SpanishInf="vestirse",     IsRegular=true },
         new VerbEntry { Infinitive="drop",      Past="dropped",     Participle="dropped",     Gerund="dropping",     SpanishInf="soltar",       IsRegular=true },
@@ -314,6 +319,7 @@ class EnglishMatrix
         new VerbEntry { Infinitive="explain",   Past="explained",   Participle="explained",   Gerund="explaining",   SpanishInf="explicar",     IsRegular=true },
         new VerbEntry { Infinitive="explore",   Past="explored",    Participle="explored",    Gerund="exploring",    SpanishInf="explorar",     IsRegular=true },
         new VerbEntry { Infinitive="fail",      Past="failed",      Participle="failed",      Gerund="failing",      SpanishInf="fallar",       IsRegular=true },
+        new VerbEntry { Infinitive="fear",      Past="feared",      Participle="feared",      Gerund="fearing",      SpanishInf="temer",        IsRegular=true },
         new VerbEntry { Infinitive="finish",    Past="finished",    Participle="finished",    Gerund="finishing",    SpanishInf="terminar",     IsRegular=true },
         new VerbEntry { Infinitive="fix",       Past="fixed",       Participle="fixed",       Gerund="fixing",       SpanishInf="arreglar",     IsRegular=true },
         new VerbEntry { Infinitive="hack",      Past="hacked",      Participle="hacked",      Gerund="hacking",      SpanishInf="hackear",      IsRegular=true },
@@ -367,6 +373,7 @@ class EnglishMatrix
         new VerbEntry { Infinitive="talk",      Past="talked",      Participle="talked",      Gerund="talking",      SpanishInf="hablar",       IsRegular=true },
         new VerbEntry { Infinitive="test",      Past="tested",      Participle="tested",      Gerund="testing",      SpanishInf="probar",       IsRegular=true },
         new VerbEntry { Infinitive="travel",    Past="traveled",    Participle="traveled",    Gerund="traveling",    SpanishInf="viajar",       IsRegular=true },
+        new VerbEntry { Infinitive="trust",     Past="trusted",     Participle="trusted",     Gerund="trusting",     SpanishInf="confiar en",   IsRegular=true },
         new VerbEntry { Infinitive="try",       Past="tried",       Participle="tried",       Gerund="trying",       SpanishInf="intentar",     IsRegular=true },
         new VerbEntry { Infinitive="turn",      Past="turned",      Participle="turned",      Gerund="turning",      SpanishInf="girar",        IsRegular=true },
         new VerbEntry { Infinitive="type",      Past="typed",       Participle="typed",       Gerund="typing",       SpanishInf="escribir",     IsRegular=true },
@@ -758,6 +765,66 @@ class EnglishMatrix
 
     static Random rnd = new Random();
 
+    // ── Estadísticas de sesión (en memoria, se pierden al salir) ─
+    // Alimenta la repetición espaciada (PickVerb) y el modo de debilidades.
+    static class SessionStats
+    {
+        public class Stat { public int Attempts; public int Misses; }
+
+        public static Dictionary<string, Stat> ByVerb = new Dictionary<string, Stat>();
+
+        public static void RecordVerb(string verb, bool correct)
+        {
+            if (!ByVerb.TryGetValue(verb, out var s)) { s = new Stat(); ByVerb[verb] = s; }
+            s.Attempts++;
+            if (!correct) s.Misses++;
+        }
+
+        public static double MissRate(Stat s) => s.Attempts == 0 ? 0 : (double)s.Misses / s.Attempts;
+
+        public static bool HasWeakData => ByVerb.Any(kv => kv.Value.Misses > 0);
+
+        public static List<string> WeakVerbs(int topN) =>
+            ByVerb.Where(kv => kv.Value.Misses > 0)
+                  .OrderByDescending(kv => MissRate(kv.Value))
+                  .ThenByDescending(kv => kv.Value.Misses)
+                  .Take(topN)
+                  .Select(kv => kv.Key)
+                  .ToList();
+    }
+
+    // ── Selección de verbos: evita repetir los últimos usados y ──
+    // ── da más peso a los que el usuario ha fallado en la sesión ─
+    static Queue<string> recentVerbs = new Queue<string>();
+    const int RecentVerbsWindow = 3;
+
+    static Word PickVerb(List<Word> pool)
+    {
+        var candidates = pool.Where(v => !recentVerbs.Contains(v.English)).ToList();
+        if (candidates.Count == 0) candidates = pool;
+
+        var weighted = new List<Word>();
+        foreach (var v in candidates)
+        {
+            int weight = 1;
+            if (SessionStats.ByVerb.TryGetValue(v.English, out var s) && s.Attempts > 0)
+                weight += (int)Math.Round(SessionStats.MissRate(s) * 4);
+            for (int i = 0; i < weight; i++) weighted.Add(v);
+        }
+
+        var picked = weighted[rnd.Next(weighted.Count)];
+        recentVerbs.Enqueue(picked.English);
+        while (recentVerbs.Count > RecentVerbsWindow) recentVerbs.Dequeue();
+        return picked;
+    }
+
+    // Orden pedagógico de introducción de tiempos verbales (modo progresivo)
+    static readonly Tense[] progressionOrder =
+    {
+        Tense.PresentSimple, Tense.PastSimple, Tense.PresentContinuous,
+        Tense.FutureSimple, Tense.PastContinuous, Tense.PresentPerfect, Tense.Conditional
+    };
+
     static readonly string[] thirdPersonSubjects = { "she", "he", "my mom", "snake", "mario", "link", "my friend", "the soldier", "the player" };
 
     static bool IsThirdPerson(string subject) =>
@@ -807,9 +874,7 @@ class EnglishMatrix
     static string GetSpanishPastParticiple(string verb)
     {
         string inf = GetSpanishInfinitive(verb);
-        if (inf.EndsWith("ar")) return inf.Substring(0, inf.Length - 2) + "ado";
-        if (inf.EndsWith("er") || inf.EndsWith("ir")) return inf.Substring(0, inf.Length - 2) + "ido";
-        
+
         if (inf == "abrir") return "abierto";
         if (inf == "cubrir") return "cubierto";
         if (inf == "decir") return "dicho";
@@ -820,7 +885,10 @@ class EnglishMatrix
         if (inf == "romper") return "roto";
         if (inf == "ver") return "visto";
         if (inf == "volver") return "vuelto";
-        
+
+        if (inf.EndsWith("ar")) return inf.Substring(0, inf.Length - 2) + "ado";
+        if (inf.EndsWith("er") || inf.EndsWith("ir")) return inf.Substring(0, inf.Length - 2) + "ido";
+
         return inf;
     }
 
@@ -954,15 +1022,19 @@ class EnglishMatrix
 
     enum SentenceMode { Normal, Question }
 
-    static (string english, string spanish) GenerateSentence(
+    static (string english, string spanish, string verb, Tense tense) GenerateSentence(
         bool includePlace  = true,
         bool includeTime   = true,
         SentenceMode mode  = SentenceMode.Normal,
-        Tense? forcedTense = null)
+        Tense? forcedTense = null,
+        IReadOnlyList<Tense> allowedTenses = null,
+        List<Word> verbPool = null)
     {
         var subj  = subjects[rnd.Next(subjects.Count)];
-        var verb  = verbsForSentences[rnd.Next(verbsForSentences.Count)];
-        var tense = forcedTense ?? (Tense)rnd.Next(7);
+        var verb  = PickVerb(verbPool ?? verbsForSentences);
+        var tense = forcedTense ?? (allowedTenses != null && allowedTenses.Count > 0
+                        ? allowedTenses[rnd.Next(allowedTenses.Count)]
+                        : (Tense)rnd.Next(7));
 
         string engVerb = BuildEnglishVerb(subj.English, verb.English, tense);
         string espVerb = BuildSpanishVerb(subj.English, verb.English, tense);
@@ -1036,7 +1108,7 @@ class EnglishMatrix
             esp = $"{subj.Spanish} {espVerb}{espComp}{espPlace}{espTime}.";
         }
 
-        return ($"{label} {eng}", $"{label} {esp}");
+        return ($"{label} {eng}", $"{label} {esp}", verb.English, tense);
     }
 
     // ── Menú principal ───────────────────────────────────────
@@ -1072,7 +1144,11 @@ class EnglishMatrix
             Console.WriteLine("╠══════════════════════════════════════════╣");
             Console.WriteLine("║  11. Agregar mis propias palabras        ║");
             Console.WriteLine("║  12. Ver todas mis palabras              ║");
-            Console.WriteLine("║  13. Salir                               ║");
+            Console.WriteLine("╠══════════════════════════════════════════╣");
+            Console.WriteLine("║   REPASO RÁPIDO                          ║");
+            Console.WriteLine("║  13. Flashcards de verbos                ║");
+            Console.WriteLine("║  14. Repasar mis debilidades (sesión)    ║");
+            Console.WriteLine("║  15. Salir                               ║");
             Console.WriteLine("╚══════════════════════════════════════════╝");
             Console.Write("\nElige una opción: ");
 
@@ -1091,7 +1167,9 @@ class EnglishMatrix
                 case "10": ModeShortStories();                  break;
                 case "11": ModeAddWords();                      break;
                 case "12": ModeListWords();                     break;
-                case "13": running = false;                     break;
+                case "13": ModeFlashcards();                    break;
+                case "14": ModeWeaknesses();                    break;
+                case "15": running = false;                     break;
                 default:
                     Console.WriteLine("Opción no válida. Presiona Enter...");
                     Console.ReadLine(); break;
@@ -1138,7 +1216,7 @@ class EnglishMatrix
         Console.WriteLine();
         for (int i = 1; i <= count; i++)
         {
-            var (eng, esp) = GenerateSentence(mode: mode, forcedTense: tense);
+            var (eng, esp, _, _) = GenerateSentence(mode: mode, forcedTense: tense);
             Console.WriteLine($"  {i}. EN: {eng}");
             Console.WriteLine($"     ES: {esp}");
             Console.WriteLine();
@@ -1150,17 +1228,38 @@ class EnglishMatrix
 
     // ── Quiz oraciones ───────────────────────────────────────
 
+    static void PrintQuizSummary(int correct, int total)
+    {
+        if (total == 0) return;
+        int pct = (correct * 100) / total;
+        Console.WriteLine($"\nResultado: {correct}/{total} ({pct}%)");
+        if      (pct >= 80) Console.WriteLine("¡Excelente! 🏆");
+        else if (pct >= 50) Console.WriteLine("¡Bien! Sigue practicando 💪");
+        else                Console.WriteLine("¡No te rindas! Keep going! 🎮");
+    }
+
     static void ModeQuiz(SentenceMode mode)
     {
         Console.Clear();
         Console.WriteLine(mode == SentenceMode.Question
             ? "=== Quiz — Preguntas ===" : "=== Quiz — Oraciones ===");
-        Console.WriteLine("Escribe 'salir' para terminar.\n");
+
+        Console.WriteLine("\nTiempos verbales:");
+        Console.WriteLine("  1. Aleatorio (mezcla todos)");
+        Console.WriteLine("  2. Progresivo (empieza fácil y sube de nivel)");
+        Console.Write("Elige (1-2): ");
+        bool progressive = Console.ReadLine()?.Trim() == "2";
+
+        Console.WriteLine("\nEscribe 'salir' para terminar.\n");
 
         int correct = 0, total = 0;
+        int level = 2;   // tiempos desbloqueados al inicio en modo progresivo
+        int streak = 0;  // aciertos seguidos para subir de nivel
+
         while (true)
         {
-            var (eng, esp) = GenerateSentence(mode: mode);
+            IReadOnlyList<Tense> allowed = progressive ? progressionOrder.Take(level).ToList() : null;
+            var (eng, esp, verb, tense) = GenerateSentence(mode: mode, allowedTenses: allowed);
             Console.WriteLine($"EN: {eng}");
             Console.Write("Tu traducción: ");
             string answer = Console.ReadLine();
@@ -1168,17 +1267,33 @@ class EnglishMatrix
             total++;
             Console.WriteLine($"Respuesta: {esp}");
             Console.Write("¿La tuviste bien? (s/n): ");
-            if (Console.ReadLine()?.ToLower() == "s") correct++;
+            bool ok = Console.ReadLine()?.ToLower() == "s";
+            if (ok) correct++;
+            SessionStats.RecordVerb(verb, ok);
+
+            if (progressive)
+            {
+                streak = ok ? streak + 1 : 0;
+                if (streak >= 3 && level < progressionOrder.Length)
+                {
+                    level++;
+                    streak = 0;
+                    Console.WriteLine($"🔓 ¡Subiste de nivel! Nuevo tiempo desbloqueado: {TenseName(progressionOrder[level - 1])}");
+                }
+            }
             Console.WriteLine();
         }
 
-        if (total > 0)
+        PrintQuizSummary(correct, total);
+
+        if (total > 0 && SessionStats.HasWeakData)
         {
-            int pct = (correct * 100) / total;
-            Console.WriteLine($"\nResultado: {correct}/{total} ({pct}%)");
-            if      (pct >= 80) Console.WriteLine("¡Excelente! 🏆");
-            else if (pct >= 50) Console.WriteLine("¡Bien! Sigue practicando 💪");
-            else                Console.WriteLine("¡No te rindas! Keep going! 🎮");
+            Console.Write("\n¿Quieres repasar ahora los verbos donde más fallaste? (s/n): ");
+            if (Console.ReadLine()?.Trim().ToLower() == "s")
+            {
+                ModeWeaknesses();
+                return;
+            }
         }
 
         Console.WriteLine("\nPresiona Enter...");
@@ -1232,7 +1347,10 @@ class EnglishMatrix
             bool partOk = part == v.Participle.ToLower();
             bool gerOk  = ger  == v.Gerund.ToLower();
 
-            if (pastOk && partOk && gerOk)
+            bool ok = pastOk && partOk && gerOk;
+            SessionStats.RecordVerb(v.Infinitive, ok);
+
+            if (ok)
             {
                 correct++;
                 Console.WriteLine("  ✅ ¡Perfecto!\n");
@@ -1246,14 +1364,94 @@ class EnglishMatrix
             }
         }
 
-        if (total > 0)
+        PrintQuizSummary(correct, total);
+
+        Console.WriteLine("\nPresiona Enter...");
+        Console.ReadLine();
+    }
+
+    // ── Flashcards de verbos ──────────────────────────────────
+
+    static void ModeFlashcards()
+    {
+        Console.Clear();
+        Console.WriteLine("=== Flashcards — Repaso rápido ===");
+        Console.WriteLine("Se muestra el infinitivo. Piensa la traducción y las formas, luego presiona Enter para revelar.");
+        Console.WriteLine("Escribe 'salir' en vez de calificar para terminar.\n");
+
+        int correct = 0, total = 0;
+
+        while (true)
         {
-            int pct = (correct * 100) / total;
-            Console.WriteLine($"\nResultado: {correct}/{total} ({pct}%)");
-            if      (pct >= 80) Console.WriteLine("¡Excelente! 🏆");
-            else if (pct >= 50) Console.WriteLine("¡Bien! Sigue practicando 💪");
-            else                Console.WriteLine("¡No te rindas! Keep going! 🎮");
+            var v = verbList[rnd.Next(verbList.Count)];
+            Console.Write($"\n{v.Infinitive} → ");
+            Console.ReadLine();
+            Console.WriteLine($"  {v.SpanishInf}  |  past: {v.Past}  |  participle: {v.Participle}  |  gerund: {v.Gerund}");
+            Console.Write("¿La sabías? (s/n, 'salir' para terminar): ");
+            string resp = Console.ReadLine()?.Trim().ToLower();
+            if (resp == "salir") break;
+
+            total++;
+            bool ok = resp == "s";
+            if (ok) correct++;
+            SessionStats.RecordVerb(v.Infinitive, ok);
         }
+
+        PrintQuizSummary(correct, total);
+
+        Console.WriteLine("\nPresiona Enter...");
+        Console.ReadLine();
+    }
+
+    // ── Repaso de debilidades detectadas en la sesión ─────────
+
+    static void ModeWeaknesses()
+    {
+        Console.Clear();
+        Console.WriteLine("=== Repaso de mis debilidades ===");
+
+        if (!SessionStats.HasWeakData)
+        {
+            Console.WriteLine("\nTodavía no tienes fallos registrados en esta sesión.");
+            Console.WriteLine("Practica en el Quiz (3/4) o en Flashcards (13) y vuelve aquí para repasar tus puntos débiles.");
+            Console.WriteLine("\nPresiona Enter...");
+            Console.ReadLine();
+            return;
+        }
+
+        var weakInfinitives = SessionStats.WeakVerbs(8);
+        var pool = verbsForSentences.Where(v => weakInfinitives.Contains(v.English)).ToList();
+
+        if (pool.Count == 0)
+        {
+            Console.WriteLine("\nTus verbos con más fallos no están disponibles para generar oraciones (solo conjugación):");
+            Console.WriteLine("  " + string.Join(", ", weakInfinitives));
+            Console.WriteLine("\nPresiona Enter...");
+            Console.ReadLine();
+            return;
+        }
+
+        Console.WriteLine($"\nRepasando tus {pool.Count} verbo(s) con más fallos: {string.Join(", ", pool.Select(v => v.English))}");
+        Console.WriteLine("Escribe 'salir' para terminar.\n");
+
+        int correct = 0, total = 0;
+        while (true)
+        {
+            var (eng, esp, verb, tense) = GenerateSentence(mode: SentenceMode.Normal, verbPool: pool);
+            Console.WriteLine($"EN: {eng}");
+            Console.Write("Tu traducción: ");
+            string answer = Console.ReadLine();
+            if (answer?.ToLower() == "salir") break;
+            total++;
+            Console.WriteLine($"Respuesta: {esp}");
+            Console.Write("¿La tuviste bien? (s/n): ");
+            bool ok = Console.ReadLine()?.ToLower() == "s";
+            if (ok) correct++;
+            SessionStats.RecordVerb(verb, ok);
+            Console.WriteLine();
+        }
+
+        PrintQuizSummary(correct, total);
 
         Console.WriteLine("\nPresiona Enter...");
         Console.ReadLine();
